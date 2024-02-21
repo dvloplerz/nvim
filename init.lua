@@ -1,2 +1,3 @@
-require "nebulax.core"
-require "nebulax.lazy"
+vim.g.mapleader = " "
+vim.g.localmapleader = vim.g.mapleader
+require("dvloplerz")
