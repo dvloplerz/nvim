@@ -2,7 +2,7 @@ local augroup = vim.api.nvim_create_augroup
 local autocmd = vim.api.nvim_create_autocmd
 
 local n01knoGroup = augroup("n01kno", {})
-local yankGroup = augroup("HighlightYank", {})
+local yankGroup = augroup("HighlightYank", { clear = true })
 
 local ok, plenary_reload = pcall(require, "plenary.reload")
 local reloader = require
@@ -70,14 +70,13 @@ autocmd("BufWritePre", {
 })
 
 autocmd("TextYankPost", {
-    group = yankGroup,
-    pattern = "*",
     callback = function()
         vim.highlight.on_yank({
-            higroup = "IncSearch",
-            timeout = 100,
+            timeout = 30,
         })
     end,
+    group = yankGroup,
+    pattern = "*",
 })
 
 autocmd({

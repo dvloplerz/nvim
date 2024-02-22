@@ -1,29 +1,66 @@
 return {
-    { 'VonHeikemen/lsp-zero.nvim',         lazy = true,  event = { "BufEnter", "InsertEnter" }, branch = 'v3.x', },
-    { 'williamboman/mason.nvim',           lazy = false, config = true },
-    { 'williamboman/mason-lspconfig.nvim', lazy = false, config = true },
     {
-        'neovim/nvim-lspconfig',
-        cmd = { "LspInfo", "LspInstall", "LspStart" },
-        event = { "BufReadPre", "BufNewFile" },
-    },
-    { 'williamboman/mason-lspconfig.nvim' },
-    { "L3MON4D3/LuaSnip",                 dependencies = { "hrsh7th/nvim-cmp", "rafamadriz/friendly-snippets", "saadparwaiz1/cmp_luasnip" } },
-    {
-        'hrsh7th/cmp-nvim-lsp',
+        'VonHeikemen/lsp-zero.nvim',
+        lazy = true,
+        event = { "BufEnter", "InsertEnter" },
+        branch = 'v3.x',
         dependencies = {
-            'hrsh7th/cmp-nvim-lua',
-            'hrsh7th/nvim-cmp',
+            {
+                'williamboman/mason.nvim',
+                lazy = false,
+                config = true,
+                dependencies = {
+                    { 'williamboman/mason-lspconfig.nvim', lazy = true }
+                }
+            },
+            {
+                'neovim/nvim-lspconfig',
+                lazy = true,
+                cmd = { "LspInfo", "LspInstall", "LspStart" },
+                event = { "BufReadPre", "BufNewFile" },
+                dependencies = {
+                    {
+                        "hrsh7th/nvim-cmp",
+                        lazy = true,
+                        event = { "BufReadPre", "BufEnter" },
+                        opts = function(_, opts)
+                            require("luasnip.loaders.from_vscode").lazy_load()
+                            local luasnip = require("luasnip")
+
+                            opts.snippet = {
+                                expand = function(args)
+                                    luasnip.lsp_expand(args.body)
+                                end
+                            }
+
+                            opts.sources = opts.sources or {}
+                            table.insert(opts.sources, { name = "nvim_lsp" })
+                            table.insert(opts.sources,
+                                { name = "luasnip", option = { show_autosnippets = true } })
+                            table.insert(opts.sources, { { name = "path", keyword_length = 2 } })
+                            table.insert(opts.sources, { { name = "buffer", keyword_length = 2 } })
+                            table.insert(opts.sources, { { name = "crates" } })
+                        end,
+                        dependencies = {
+                            {
+                                "L3MON4D3/LuaSnip",
+                                lazy = true,
+                                build = (function()
+                                    return "make install_jsregexp"
+                                end)(),
+                            },
+                            "saadparwaiz1/cmp_luasnip",
+                            "hrsh7th/cmp-nvim-lsp",
+                            "hrsh7th/cmp-path",
+                            "hrsh7th/cmp-buffer",
+
+                            'hrsh7th/cmp-nvim-lua',
+                            "rafamadriz/friendly-snippets",
+                        },
+                    },
+                },
+            },
         },
-    },
-    {
-        'hrsh7th/nvim-cmp',
-        event = "InsertEnter",
-        opts = function(_, opts)
-            opts.sources = opts.sources or {}
-            table.insert(opts.sources, { name = "crates" })
-            table.insert(opts.sources, { name = "luasnip" })
-        end,
     },
     { "mfussenegger/nvim-dap" },
     { "nvim-lua/plenary.nvim", lazy = true },
@@ -36,9 +73,12 @@ return {
     },
     {
         "nvim-treesitter/nvim-treesitter",
+        lazy = true,
         dependencies = {
+            'nvim-treesitter/nvim-treesitter-textobjects',
             {
                 "nvim-treesitter/nvim-treesitter-context",
+                lazy = true,
                 config = function()
                     require("treesitter-context").setup({
                         enable = true,
@@ -56,21 +96,6 @@ return {
         },
         build = ":TSUpdate",
         event = { "BufReadPost", "BufNewFile" },
-        config = function()
-            require("nvim-treesitter.configs").setup({
-                auto_install = true,
-                ensure_installed = { "rust", "lua", "toml", "html", "bash", "vim", "markdown", "markdown_inline", "go", "query" },
-                ignore_install = {},
-                sync_install = false,
-                highlight = {
-                    enable = true,
-                },
-                indent = { enable = true },
-                incremental_selection = { enable = true },
-                textobjects = { enable = true },
-            })
-            require("nvim-treesitter.statusline")
-        end,
         opts = {
             highlight = { enable = true },
             indent = { enable = true },
@@ -80,7 +105,27 @@ return {
         "nvim-telescope/telescope.nvim",
         lazy = false,
         dependencies = {
-            { "nvim-lua/plenary.nvim" },
+            "nvim-lua/plenary.nvim",
+            {
+                'nvim-telescope/telescope-fzf-native.nvim',
+                build = "make",
+                cond = function()
+                    return vim.fn.executable 'make' == 1
+                end,
+                config = function()
+                    require('telescope').load_extension('fzf')
+                    require('telescope').setup {
+                        extensions = {
+                            fzf = {
+                                fuzzy = true,                   -- false will only do exact matching
+                                override_generic_sorter = true, -- override the generic sorter
+                                override_file_sorter = true,    -- override the file sorter
+                                case_mode = "smart_case",       -- or "ignore_case" or "respect_case"
+                            }
+                        }
+                    }
+                end
+            },
         },
         config = function()
             local actions = require('telescope.actions')
@@ -154,24 +199,8 @@ return {
         end,
     },
     {
-        'nvim-telescope/telescope-fzf-native.nvim',
-        build = "make",
-        config = function()
-            require('telescope').load_extension('fzf')
-            require('telescope').setup {
-                extensions = {
-                    fzf = {
-                        fuzzy = true,                   -- false will only do exact matching
-                        override_generic_sorter = true, -- override the generic sorter
-                        override_file_sorter = true,    -- override the file sorter
-                        case_mode = "smart_case",       -- or "ignore_case" or "respect_case"
-                    }
-                }
-            }
-        end
-    },
-    {
         "SmiteshP/nvim-navic",
+        lazy = true,
         dependencies = {
             { "neovim/nvim-lspconfig" },
         },
@@ -184,12 +213,14 @@ return {
     },
     {
         "rust-lang/rust.vim",
+        lazy = true,
         config = function()
             vim.g.rustfmt_autosave = 1
         end
     },
     {
         "mrcjkb/rustaceanvim",
+        lazy = true,
         version = "^4", -- Recommended
         ft = { "rust" },
         dependencies = {
@@ -284,6 +315,7 @@ return {
         dependencies = {
             {
                 "nvim-tree/nvim-web-devicons",
+                lazy = true,
                 opts = true,
             },
         },
@@ -527,7 +559,7 @@ return {
         config = function()
             vim.keymap.set({ "n", "x", "i" }, "<A-/>", function()
                 vim.cmd(":Commentary")
-            end, { silent = false, noremap = true })
+            end, { silent = true, noremap = true })
         end,
     },
     {

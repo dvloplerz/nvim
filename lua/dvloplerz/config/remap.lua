@@ -10,7 +10,7 @@ local opts = function(desc)
     }
 end
 
-map("n", "<Space>", "<Nop>", opts("SpaceBard do nothing!"))
+map({ "n", "v" }, "<Space>", "<Nop>", { silent = true, desc = "<Space> do nothing." })
 
 map("n", "<leader>pv", vim.cmd.Ex, opts("Back to dir list."))
 map("n", "<leader>bp", vim.cmd.bp, opts("Prev Buffer."))
@@ -39,3 +39,6 @@ map("x", "<leader>p", [["_dP]], opts("Void current word and paste current regist
 
 map("n", "j", [[v:count == 0 ? 'gj' : 'j']], { expr = true, silent = true })
 map("n", "k", [[v:count == 0 ? 'gk' : 'k']], { expr = true, silent = true })
+
+map("n", "<leader>e", vim.diagnostic.open_float, { desc = "Open floating diagnostic message" })
+map("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagnostics list" })

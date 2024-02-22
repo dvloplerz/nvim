@@ -51,7 +51,7 @@ opt.guicursor = { a = "Block" }
 opt.icon = true
 opt.list = false
 opt.number = true
-opt.numberwidth = 2
+opt.numberwidth = 3
 opt.relativenumber = true
 opt.scroll = 10
 opt.shiftround = true
@@ -72,7 +72,7 @@ opt.clipboard = "unnamedplus"
 opt.fillchars = { eob = " ", lastline = " " }
 opt.foldenable = false
 opt.isfname = { "@-@" }
-opt.completeopt = "noinsert,menuone,noselect"
+opt.completeopt = "menuone,noinsert"
 opt.pumblend = 10
 opt.pumheight = 10
 opt.redrawtime = 50
@@ -92,10 +92,8 @@ opt.inccommand = "nosplit"
 opt.incsearch = true
 opt.showmatch = false
 
-
-
 opt.termguicolors = true
-opt.timeoutlen = 300
+opt.timeoutlen = 200
 opt.title = true
 
 opt.undodir = os.getenv("HOME") .. "/.config/nvim/undodir"

@@ -1,42 +1,46 @@
 local lsp_zero = require("lsp-zero")
-local cmp = require("cmp")
-local cmp_select = { behavior = cmp.SelectBehavior.Select }
 local luasnip = require("luasnip")
 local navic = require("nvim-navic")
+local cmp = require("cmp")
+require("luasnip.loaders.from_vscode").lazy_load()
 
+require("neodev").setup {
+    library = {
+        enabled = true,
+        runtime = true,
+        types = true,
+        plugins = true
+    },
+    setup_jsonls = true,
+    lspconfig = true,
+    pathStrict = true,
+}
+
+require("mason").setup {}
+
+vim.g.lsp_zero_extend_lspconfig = 1
+vim.g.lsp_zero_extend_cmp = 1
+vim.g.lsp_zero_ui_signcolumn = 1
+vim.g.lsp_zero_api_warnings = 1
+vim.g.lsp_zero_ui_float_border = 'single'
+
+vim.b.lsp_zero_enable_autoformat = 1
+
+lsp_zero.extend_lspconfig()
 lsp_zero.extend_cmp()
 
 luasnip.setup({
     update_events = "TextChanged,TextChangedI",
 })
 
-lsp_zero.extend_lspconfig()
-
 require("mason-lspconfig").setup({
-    ensure_installed = {},
+    ensure_installed = { "lua_ls", "jsonls", "taplo", "zls" },
     automatic_installation = {
         exclude = { "rust_analyzer" }
     },
     handlers = {
         lsp_zero.default_setup,
         lua_ls = function()
-            require("neodev").setup({
-                library = {
-                    enabled = true,
-                    runtime = true,
-                    types = true,
-                    plugins = true
-                },
-                setup_jsonls = true,
-                lspconfig = true,
-                pathStrict = false,
-                settings = {
-                    legacy = false
-                },
-            })
-
-            -- local lua_opts = lsp_zero.nvim_lua_ls()
-            -- require("lspconfig").lua_ls.setup(lua_opts)
             require("lspconfig").lua_ls.setup({})
         end,
     }
@@ -45,7 +49,7 @@ require("mason-lspconfig").setup({
 lsp_zero.on_attach(function(client, bufnr)
     require("luasnip.loaders.from_vscode").lazy_load()
     lsp_zero.default_keymaps({ buffer = bufnr })
-
+    lsp_zero.highlight_symbol(client, bufnr)
 
     if client.server_capabilities.documentSymbolProvider then
         navic.attach(client, bufnr)
@@ -54,6 +58,11 @@ lsp_zero.on_attach(function(client, bufnr)
     vim.keymap.set({ "n" }, "<leader>f", vim.lsp.buf.format, { silent = true })
     vim.keymap.set({ "n" }, "<leader>rn", vim.lsp.buf.rename, { silent = true })
     vim.keymap.set({ "n" }, "K", vim.lsp.buf.hover, { silent = true })
+    vim.keymap.set({ "n" }, "<C-k>", vim.lsp.buf.signature_help, { desc = "Signature Docs", silent = true })
+    vim.keymap.set({ "n" }, "<leader>ca", function()
+            vim.lsp.buf.code_action { context = { only = { 'quickfix', 'refactor', 'source' } } }
+        end,
+        { silent = true, desc = "[C]ode[A]ction" })
 
     vim.keymap.set({ "i", "s" }, "<C-k>", function()
         if luasnip.expand_or_jumpable() then
@@ -87,12 +96,18 @@ lsp_zero.on_attach(function(client, bufnr)
         underline = false,
         virtual_text = {
             spacing = 4,
-            -- source = "if_many",
             source = true,
             prefix = "●",
         },
         signs = true,
         update_in_insert = true,
+        float = {
+            style = 'minimal',
+            border = 'single',
+            source = 'always',
+            header = '',
+            prefix = ''
+        },
     })
 end)
 
@@ -102,13 +117,18 @@ vim.g.rustaceanvim = {
     },
 }
 
-lsp_zero.set_sign_icons({
+lsp_zero.format_on_save {
+    format_opts = {
+        async = true,
+    }
+}
+
+lsp_zero.set_sign_icons {
     error = "✘",
     warn = "▲",
     hint = "⚑",
-    info = "»",
-})
-
+    info = "!»",
+}
 
 local has_words_before = function()
     unpack = unpack or table.unpack
@@ -117,7 +137,7 @@ local has_words_before = function()
         vim.api.nvim_buf_get_lines(0, line - 1, line, true)[1]:sub(col, col):match("%s") == nil
 end
 
-
+local cmp_select = { behavior = cmp.SelectBehavior.Select }
 cmp.setup({
     snippet = {
         expand = function(args)
@@ -127,23 +147,10 @@ cmp.setup({
     preselect = cmp.PreselectMode.None,
     completion = {
         autocomplete = { "TextChanged", "TextChangedI" },
-        completeopt = "menu,menuone,noselect"
-    },
-    sources = {
-        { name = "nvim_lua" },
-        {
-            name = "nvim_lsp",
-            keyword_length = 1,
-            entry_filter = function(entry, ctx)
-                return require("cmp.types").lsp.CompletionItemKind[entry:get_kind()] ~= 'Text'
-            end
-        },
-        { name = "luasnip", option = { show_autosnippets = true }, max_item_count = 5 },
-        { name = "path" },
-        {},
+        completeopt = "menu,menuone,noinsert,noselect"
     },
     formatting = lsp_zero.cmp_format(),
-    mapping = {
+    mapping = cmp.mapping.preset.insert {
         ["<C-e>"] = cmp.mapping.abort(),
         ["<C-n>"] = cmp.mapping(function(fallback)
             if cmp.visible() then
@@ -151,7 +158,7 @@ cmp.setup({
             elseif luasnip.expand_or_jumpable() then
                 luasnip.expand_or_jump()
             elseif has_words_before() then
-                cmp.complete()
+                cmp.mapping.complete()
             else
                 fallback()
             end
@@ -178,12 +185,14 @@ cmp.setup({
             fallback()
         end, { "i", "c" }),
         ["<C-.>"] = cmp.mapping.complete({ select = true, behavior = cmp_select }),
+        ["<C-Space>"] = cmp.mapping.complete {},
         ["<C-u>"] = cmp.mapping.scroll_docs(-4),
         ["<C-d>"] = cmp.mapping.scroll_docs(4),
-        ["<C-'>"] = cmp.mapping(function(_)
+        ["<C-'>"] = cmp.mapping(function(fallback)
             if luasnip.expand_or_locally_jumpable() then
                 luasnip.expand_or_jump()
             end
+            fallback()
         end, { "i", "x" }),
     },
 })
