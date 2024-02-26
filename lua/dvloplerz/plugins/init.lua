@@ -214,29 +214,28 @@ return {
     {
         "rust-lang/rust.vim",
         lazy = true,
+        ft = { 'rust' },
         config = function()
             vim.g.rustfmt_autosave = 1
         end
     },
     {
         "mrcjkb/rustaceanvim",
-        lazy = true,
         version = "^4", -- Recommended
         ft = { "rust" },
-        dependencies = {
-            {
-                "saecki/crates.nvim",
-                tag = "stable",
-                event = { "BufRead Cargo.toml" },
-                dependencies = { "nvim-lua/plenary.nvim" },
-                config = function()
-                    require("crates").setup()
-                end,
-                opts = {
-                    src = {
-                        cmp = { enabled = true },
-                    },
-                },
+    },
+    {
+        "saecki/crates.nvim",
+        event = { "BufRead Cargo.toml" },
+        ft = { 'toml' },
+        tag = "stable",
+        dependencies = { "nvim-lua/plenary.nvim" },
+        config = function()
+            require("crates").setup()
+        end,
+        opts = {
+            src = {
+                cmp = { enabled = true },
             },
         },
     },
@@ -247,16 +246,43 @@ return {
         lazy = false,
     },
     {
-
         "rose-pine/neovim",
         name = "rose-pine",
         lazy = false,
         priority = 1000,
         opts = {
+            variant = 'main',
+            dark_variant = "main",
+            disable_background = true,
+            dim_inactive_windows = false,
+            extend_background_behind_border = false,
+            groups = {
+                background = "#0c0b0e",
+                background_nc = "#0c0b0e",
+            },
             styles = {
                 bold = true,
                 italic = true,
                 transparency = true,
+            },
+            highlight_groups = {
+                --[ rose-pine Telescope ]--
+                TelescopeBorder = { fg = "highlight_high", bg = "none" },
+                TelescopeNormal = { bg = "none" },
+                TelescopePrompt = { bg = "none" },
+                TelescopePromptNormal = { bg = "none" },
+                TelescopePromptBorder = { bg = "none" },
+                TelescopeResultsNormal = { fg = "subtle", bg = "none" },
+                TelescopeSelection = { fg = "text", bg = "none" },
+                TelescopeSelectionCaret = { fg = "rose", bg = "rose" },
+
+                --[ Custom ]--
+                Directory = { fg = "love" },
+                CursorLineNr = { fg = "love" },
+                MsgArea = { fg = "gold" },
+                FloatBorder = { fg = "pine" },
+                QuickFixLine = { fg = "rose" },
+                Visual = { bg = "pine", blend = 20 },
             },
             before_highlight = function(group, highlight, palette)
                 if highlight.undercurls then
@@ -264,47 +290,8 @@ return {
                 end
             end,
         },
-        config = function()
-            -- require("rose-pine").setup({
-            --variant = "main",
-            --dark_variant = "main",
-            --disable_background = true,
-            --dim_inactive_windows = true,
-            --extend_background_behind_border = true,
-
-            -- styles = {
-            --     bold = true,
-            --     italic = true,
-            --     transparency = true,
-            -- },
-
-            --groups = {
-            --	background = "#141217",
-            --	background_nc = "#141217",
-            --	-- background = "none"
-            --},
-            --highlight_groups = {
-            --	--[ rose-pine Telescope ]--
-            --	TelescopeBorder = { fg = "highlight_high", bg = "none" },
-            --	TelescopeNormal = { bg = "none" },
-            --	TelescopePromptNormal = { bg = "base" },
-            --	TelescopeResultsNormal = { fg = "subtle", bg = "none" },
-            --	TelescopeSelection = { fg = "text", bg = "base" },
-            --	TelescopeSelectionCaret = { fg = "rose", bg = "rose" },
-
-            --	NormalFloat = { bg = "#141217", blend = 0 },
-            --	CursorlineNr = { fg = "love" },
-            --	-- TermCursor = { bg = "#dde5ed", blend = 100 },
-
-            --	-- Pmenu = { bg = "nc", fg = 'none', blend = 0 },
-            --},
-
-            -- before_highlight = function(group, highlight, palette)
-            --     if highlight.undercurls then
-            --         highlight.undercurls = false
-            --     end
-            -- end,
-            -- })
+        config = function(things, opts)
+            require("rose-pine").setup(opts)
             vim.cmd.colorscheme("rose-pine")
         end,
     },
@@ -361,7 +348,8 @@ return {
                     -- Disable sections and component separators
                     component_separators = "",
                     section_separators = "",
-                    theme = {
+                    theme = 'rose-pine',
+                    {
                         -- We are going to use lualine_c an lualine_x as left and
                         -- right section. Both are highlighted by c theme .  So we
                         -- are just setting default looks o statusline
@@ -613,5 +601,9 @@ return {
                 end
             },
         },
+    },
+    {
+        dir = string.format("%s", vim.fn.stdpath('config') .. "/lua/dvloplerz/plugins/dvlx"),
+        lazy = false,
     },
 }

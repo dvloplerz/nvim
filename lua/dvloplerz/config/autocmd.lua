@@ -1,7 +1,7 @@
 local augroup = vim.api.nvim_create_augroup
 local autocmd = vim.api.nvim_create_autocmd
 
-local n01knoGroup = augroup("n01kno", {})
+local dvloplerz = augroup("dvloplerzGroup", { clear = true })
 local yankGroup = augroup("HighlightYank", { clear = true })
 
 local ok, plenary_reload = pcall(require, "plenary.reload")
@@ -47,7 +47,7 @@ autocmd("TermOpen", {
     callback = function()
         local cur_win = vim.api.nvim_get_current_win()
         local win_width = vim.api.nvim_win_get_width(cur_win)
-        local half_win = math.floor(math.abs(win_width / 2))
+        local win_size = math.floor(math.abs(win_width / 2))
 
         vim.wo[cur_win].number = false
         vim.wo[cur_win].relativenumber = false
@@ -56,7 +56,7 @@ autocmd("TermOpen", {
         if win_width < 70 then
             return
         else
-            vim.api.nvim_win_set_width(0, half_win)
+            vim.api.nvim_win_set_width(0, win_size)
         end
         vim.cmd.startinsert()
     end,
@@ -79,18 +79,16 @@ autocmd("TextYankPost", {
     pattern = "*",
 })
 
-autocmd({
-    "BufEnter",
-}, {
-    group = n01knoGroup,
+autocmd("BufEnter", {
+    group = dvloplerz,
     pattern = "*",
     callback = function()
         vim.lsp.codelens.refresh()
     end,
 })
 
-autocmd({ "BufWritePre" }, {
-    group = n01knoGroup,
+autocmd("BufWritePre", {
+    group = dvloplerz,
     pattern = "*",
     command = [[%s/\s\+$//e]],
 })

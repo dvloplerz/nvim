@@ -2,7 +2,62 @@ local lsp_zero = require("lsp-zero")
 local luasnip = require("luasnip")
 local navic = require("nvim-navic")
 local cmp = require("cmp")
+
+lsp_zero.extend_lspconfig()
+lsp_zero.extend_cmp()
+
+vim.g.rustaceanvim = {
+    tools = {
+        on_initialized = function()
+            -- code
+            local RustLs = vim.api.nvim_create_augroup("RustLsp", { clear = true })
+            vim.api.nvim_create_autocmd("CursorHold",
+                { pattern = "*.rs", callback = function() vim.lsp.buf.document_highlight() end, group = RustLs })
+            vim.api.nvim_create_autocmd({ "CursorMoved", "InsertEnter" },
+                { pattern = "*.rs", callback = function() vim.lsp.buf.clear_references() end, group = RustLs })
+            vim.api.nvim_create_autocmd({ "BufEnter", "CursorHold", "InsertLeave" },
+                { pattern = "*.rs", callback = function() vim.lsp.codelens.refresh() end, group = RustLs })
+            NOTI("registered auto_cmd complete.")
+        end
+    },
+    auto_attach = function() return { "rustup", "run", "nightly", "rust-analyzer" } end,
+    server = {
+        cmd = { "rustup", "run", "nightly", "rust-analyzer" },
+        capabilities = lsp_zero.get_capabilities(),
+        on_attach = function(client, bufnr)
+            vim.keymap.set("n", "K", function()
+                vim.cmd.RustLsp { "hover", "actions" }
+            end, { buffer = bufnr, desc = "Rust Hover", nowait = true })
+        end,
+        settings = {
+            ['rust-analyzer'] = {
+                cargo = {
+                    allFeatures = true,
+                    loadOutDirsFromCheck = true,
+                    runBuildScripts = true,
+                },
+                checkOnSave = {
+                    allFeatures = true,
+                    command = "clippy",
+                    extraArgs = { "--no-deps" },
+
+                },
+                procMacro = {
+                    enable = true,
+                    ignored = {
+                        leptos_macro = { "server" },
+                        ["async-trait"] = { "async_trait" },
+                        ["napi-derive"] = { "napi" },
+                        ["async-recursion"] = { "async_recursion" },
+                    },
+                },
+            },
+        }
+    },
+}
+
 require("luasnip.loaders.from_vscode").lazy_load()
+require("luasnip.loaders.from_vscode").lazy_load { paths = vim.g.vscode_snippets_path or "" }
 
 require("neodev").setup {
     library = {
@@ -13,36 +68,34 @@ require("neodev").setup {
     },
     setup_jsonls = true,
     lspconfig = true,
-    pathStrict = true,
+    pathStrict = false,
 }
-
-require("mason").setup {}
-
-vim.g.lsp_zero_extend_lspconfig = 1
-vim.g.lsp_zero_extend_cmp = 1
-vim.g.lsp_zero_ui_signcolumn = 1
-vim.g.lsp_zero_api_warnings = 1
-vim.g.lsp_zero_ui_float_border = 'single'
-
-vim.b.lsp_zero_enable_autoformat = 1
-
-lsp_zero.extend_lspconfig()
-lsp_zero.extend_cmp()
-
-luasnip.setup({
-    update_events = "TextChanged,TextChangedI",
-})
 
 require("mason-lspconfig").setup({
     ensure_installed = { "lua_ls", "jsonls", "taplo", "zls" },
-    automatic_installation = {
-        exclude = { "rust_analyzer" }
-    },
+    automatic_installation = false,
     handlers = {
         lsp_zero.default_setup,
         lua_ls = function()
-            require("lspconfig").lua_ls.setup({})
+            local lua_opts = lsp_zero.nvim_lua_ls()
+            require("lspconfig").lua_ls.setup(lua_opts)
         end,
+        taplo = function()
+            -- code
+            require("lspconfig").taplo.setup {
+                on_attach = function(client, bufnr)
+                    -- code
+                    vim.keymap.set("n", "K", function()
+                        -- code
+                        if vim.fn.expand("%:t") == "Cargo.toml" and require("crates").popup_available() then
+                            require("crates").show_popup()
+                        else
+                            vim.lsp.buf.hover()
+                        end
+                    end, { desc = "Show Crate Documents.", buffer = bufnr })
+                end,
+            }
+        end
     }
 })
 
@@ -92,6 +145,24 @@ lsp_zero.on_attach(function(client, bufnr)
         lsp_zero.buffer_autoformat()
     end
 
+    vim.diagnostic.config {
+        underline = false,
+        virtual_text = {
+            spacing = 4,
+            source = true,
+            prefix = "●",
+        },
+        signs = true,
+        update_in_insert = true,
+        float = {
+            style = 'minimal',
+            border = 'none',
+            source = 'always',
+            header = '',
+            prefix = ''
+        }
+    }
+
     vim.lsp.handlers["textDocument/diagnostic"] = vim.lsp.with(vim.lsp.diagnostic.on_diagnostic, {
         underline = false,
         virtual_text = {
@@ -111,24 +182,19 @@ lsp_zero.on_attach(function(client, bufnr)
     })
 end)
 
-vim.g.rustaceanvim = {
-    server = {
-        capabilities = lsp_zero.get_capabilities()
-    },
-}
 
-lsp_zero.format_on_save {
+lsp_zero.format_on_save({
     format_opts = {
-        async = true,
+        async = false,
     }
-}
+})
 
-lsp_zero.set_sign_icons {
+lsp_zero.set_sign_icons({
     error = "✘",
     warn = "▲",
     hint = "⚑",
     info = "!»",
-}
+})
 
 local has_words_before = function()
     unpack = unpack or table.unpack
@@ -146,8 +212,8 @@ cmp.setup({
     },
     preselect = cmp.PreselectMode.None,
     completion = {
-        autocomplete = { "TextChanged", "TextChangedI" },
-        completeopt = "menu,menuone,noinsert,noselect"
+        autocomplete = { 'InsertEnter', 'TextChangedI', 'TextChanged' },
+        completeopt = "menu,menuone,noinsert"
     },
     formatting = lsp_zero.cmp_format(),
     mapping = cmp.mapping.preset.insert {
