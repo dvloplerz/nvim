@@ -17,7 +17,7 @@ require("lazy").setup({
         { import = "dvloplerz.plugins" },
     },
     defaults = {
-        lazy = true,
+        lazy = false,
         version = false,
     },
     install = {
@@ -29,11 +29,10 @@ require("lazy").setup({
         notify = false,
     },
     change_detection = {
-        enabled = true,
-        notify = false,
+        enabled = false,
     },
     performance = {
-        cache = { enabled = false },
+        cache = { enabled = true },
         reset_packpath = true,
         rtp = {
             reset = true,
@@ -41,9 +40,9 @@ require("lazy").setup({
                 "tutor",
                 "tohtml",
                 "tarPlugin",
+                "gzip",
+
             },
         }
     }
-
-
 })

@@ -5,79 +5,49 @@ local cmp = require("cmp")
 
 lsp_zero.extend_lspconfig()
 lsp_zero.extend_cmp()
-
-vim.g.rustaceanvim = {
-    tools = {
-        on_initialized = function()
-            -- code
-            local RustLs = vim.api.nvim_create_augroup("RustLsp", { clear = true })
-            vim.api.nvim_create_autocmd("CursorHold",
-                { pattern = "*.rs", callback = function() vim.lsp.buf.document_highlight() end, group = RustLs })
-            vim.api.nvim_create_autocmd({ "CursorMoved", "InsertEnter" },
-                { pattern = "*.rs", callback = function() vim.lsp.buf.clear_references() end, group = RustLs })
-            vim.api.nvim_create_autocmd({ "BufEnter", "CursorHold", "InsertLeave" },
-                { pattern = "*.rs", callback = function() vim.lsp.codelens.refresh() end, group = RustLs })
-            NOTI("registered auto_cmd complete.")
-        end
-    },
-    auto_attach = function() return { "rustup", "run", "nightly", "rust-analyzer" } end,
-    server = {
-        cmd = { "rustup", "run", "nightly", "rust-analyzer" },
-        capabilities = lsp_zero.get_capabilities(),
-        on_attach = function(client, bufnr)
-            vim.keymap.set("n", "K", function()
-                vim.cmd.RustLsp { "hover", "actions" }
-            end, { buffer = bufnr, desc = "Rust Hover", nowait = true })
-        end,
-        settings = {
-            ['rust-analyzer'] = {
-                cargo = {
-                    allFeatures = true,
-                    loadOutDirsFromCheck = true,
-                    runBuildScripts = true,
-                },
-                checkOnSave = {
-                    allFeatures = true,
-                    command = "clippy",
-                    extraArgs = { "--no-deps" },
-
-                },
-                procMacro = {
-                    enable = true,
-                    ignored = {
-                        leptos_macro = { "server" },
-                        ["async-trait"] = { "async_trait" },
-                        ["napi-derive"] = { "napi" },
-                        ["async-recursion"] = { "async_recursion" },
-                    },
-                },
-            },
-        }
-    },
-}
-
-require("luasnip.loaders.from_vscode").lazy_load()
-require("luasnip.loaders.from_vscode").lazy_load { paths = vim.g.vscode_snippets_path or "" }
-
-require("neodev").setup {
-    library = {
-        enabled = true,
-        runtime = true,
-        types = true,
-        plugins = true
-    },
-    setup_jsonls = true,
-    lspconfig = true,
-    pathStrict = false,
-}
+luasnip.config.setup {}
 
 require("mason-lspconfig").setup({
     ensure_installed = { "lua_ls", "jsonls", "taplo", "zls" },
     automatic_installation = false,
     handlers = {
         lsp_zero.default_setup,
-        lua_ls = function()
-            local lua_opts = lsp_zero.nvim_lua_ls()
+        lua_ls = function(client, bufnr)
+            local lib = vim.tbl_deep_extend("force", vim.api.nvim_get_runtime_file('', true), { "${3rd}/luv/library" })
+            local lua_opts = vim.tbl_deep_extend("force", {}, lsp_zero.nvim_lua_ls(), client.capabilities or {
+                settings = {
+                    Lua = {
+                        runtime = { version = "LuaJIT", pathStrict = true },
+                        workspace = {
+                            checkThirdParty = "Disable",
+                            library = lib,
+                            ignoreDir = { vim.o.undodir },
+                            maxPreload = "1000",
+                        },
+                        completion = {
+                            enable = true,
+                            callSnippet = "Replace",
+                            displayContext = 1,
+                            keywordSnippet = "Both",
+                        },
+                        format = {
+                            defaultConfig = {
+                                indent_style = "space",
+                                indent_size = 4,
+                                quote_style = "double",
+                                trailing_table_separator = "smart",
+                                align_call_args = true,
+                                align_function_params = true,
+                                auto_collapse_lines = true
+                            },
+                        },
+                        hint = {
+                            enable = true,
+                            paramName = "Literal",
+                        },
+                    },
+                },
+            })
             require("lspconfig").lua_ls.setup(lua_opts)
         end,
         taplo = function()
@@ -100,7 +70,6 @@ require("mason-lspconfig").setup({
 })
 
 lsp_zero.on_attach(function(client, bufnr)
-    require("luasnip.loaders.from_vscode").lazy_load()
     lsp_zero.default_keymaps({ buffer = bufnr })
     lsp_zero.highlight_symbol(client, bufnr)
 
@@ -108,7 +77,13 @@ lsp_zero.on_attach(function(client, bufnr)
         navic.attach(client, bufnr)
     end
 
-    vim.keymap.set({ "n" }, "<leader>f", vim.lsp.buf.format, { silent = true })
+    vim.keymap.set({ "i", "n" }, "<leader>cl", vim.lsp.codelens.run)
+    vim.keymap.set({ "i" }, "<Tab>", "<Tab>")
+    vim.keymap.set({ "n" }, "<leader>f", function()
+        vim.lsp.buf.format { async = true }
+        vim.cmd.write()
+        vim.cmd("normal zz")
+    end, { silent = true })
     vim.keymap.set({ "n" }, "<leader>rn", vim.lsp.buf.rename, { silent = true })
     vim.keymap.set({ "n" }, "K", vim.lsp.buf.hover, { silent = true })
     vim.keymap.set({ "n" }, "<C-k>", vim.lsp.buf.signature_help, { desc = "Signature Docs", silent = true })
@@ -182,7 +157,6 @@ lsp_zero.on_attach(function(client, bufnr)
     })
 end)
 
-
 lsp_zero.format_on_save({
     format_opts = {
         async = false,
@@ -193,7 +167,7 @@ lsp_zero.set_sign_icons({
     error = "✘",
     warn = "▲",
     hint = "⚑",
-    info = "!»",
+    info = "»",
 })
 
 local has_words_before = function()
@@ -208,13 +182,21 @@ cmp.setup({
     snippet = {
         expand = function(args)
             luasnip.lsp_expand(args.body)
-        end
+        end,
     },
     preselect = cmp.PreselectMode.None,
-    completion = {
-        autocomplete = { 'InsertEnter', 'TextChangedI', 'TextChanged' },
-        completeopt = "menu,menuone,noinsert"
+    window = {
+        completion = { border = "rounded" },
+        documentation = { border = "single" },
     },
+    completion = {
+        autocomplete = { 'InsertEnter', 'TextChanged' },
+        completeopt = "menu,menuone,noinsert",
+    },
+    sources = cmp.config.sources({
+        { name = "nvim_lsp" },
+        { name = "luasnip" },
+    }),
     formatting = lsp_zero.cmp_format(),
     mapping = cmp.mapping.preset.insert {
         ["<C-e>"] = cmp.mapping.abort(),
@@ -251,14 +233,19 @@ cmp.setup({
             fallback()
         end, { "i", "c" }),
         ["<C-.>"] = cmp.mapping.complete({ select = true, behavior = cmp_select }),
-        ["<C-Space>"] = cmp.mapping.complete {},
+        ["<C-Space>"] = cmp.mapping.complete({ select = true, behavior = cmp_select }),
         ["<C-u>"] = cmp.mapping.scroll_docs(-4),
         ["<C-d>"] = cmp.mapping.scroll_docs(4),
+        ["<Tab>"] = nil,
+        ["<S-Tab>"] = nil,
         ["<C-'>"] = cmp.mapping(function(fallback)
             if luasnip.expand_or_locally_jumpable() then
                 luasnip.expand_or_jump()
             end
             fallback()
         end, { "i", "x" }),
+    },
+    experimental = {
+        ghost_text = true
     },
 })

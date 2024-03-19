@@ -10,7 +10,7 @@ g.netrw_browse_split = 0
 o.smoothscroll = true
 o.scrollback = 10
 o.scrolloff = 10
-o.sidescrolloff = 8
+o.sidescrolloff = 10
 
 -- : Indenting
 o.shiftwidth = 4
@@ -25,6 +25,7 @@ o.expandtab = true
 -- : status
 o.laststatus = 3
 o.showmode = false
+o.showtabline = 0
 o.showcmd = true
 o.cmdheight = 1
 
@@ -45,18 +46,18 @@ end
 set_cursorline("WinLeave", false)
 set_cursorline("WinEnter", true)
 set_cursorline("BufLeave", true)
+set_cursorline("TermEnter", false)
+set_cursorline("TermLeave", true)
 o.colorcolumn = { "120" or "80" }
 o.belloff = "all"
 o.guicursor = { a = "Block" }
 o.icon = true
 o.list = false
 o.number = true
-o.numberwidth = 3
+o.numberwidth = 4
 o.relativenumber = true
 o.scroll = 10
 o.shiftround = true
-
-
 
 -- : backspace can shift lines
 o.backspace = "indent,eol,start"
@@ -64,7 +65,6 @@ o.backspace = "indent,eol,start"
 -- : backup 'n more..
 o.backup = false
 o.wrap = false
--- opt.formatoptions = opt.formatoptions - "a" - "t" + "c" + "q" - "o" + "r" + "n" + "j" - "2"
 o.formatoptions = "jcroqlnt"
 o.clipboard = "unnamedplus"
 
@@ -72,12 +72,12 @@ o.clipboard = "unnamedplus"
 o.fillchars = { eob = " ", lastline = " " }
 o.foldenable = false
 o.isfname = { "@-@" }
-o.completeopt = "menuone,noinsert"
+o.completeopt = "menu,menuone,noinsert,popup"
 o.pumblend = 10
 o.pumheight = 10
 o.redrawtime = 50
 o.sessionoptions = { "buffers", "curdir", "tabpages", "winsize" }
-o.shortmess = "aIoOc"
+o.shortmess = "aIoOcm"
 o.signcolumn = "yes"
 o.splitbelow = true
 o.splitright = true
@@ -86,13 +86,14 @@ o.splitkeep = "screen"
 
 -- : Searching
 o.smartcase = true
-o.hlsearch = false
+o.hlsearch = true
 o.ignorecase = true
 o.inccommand = "nosplit"
 o.incsearch = true
 o.showmatch = false
 
 o.termguicolors = true
+o.syntax = "ON"
 o.timeoutlen = 200
 o.title = true
 

@@ -4,12 +4,6 @@ local autocmd = vim.api.nvim_create_autocmd
 local dvloplerz = augroup("dvloplerzGroup", { clear = true })
 local yankGroup = augroup("HighlightYank", { clear = true })
 
-local ok, plenary_reload = pcall(require, "plenary.reload")
-local reloader = require
-if ok then
-    reloader = plenary_reload.reload_module
-end
-
 P = function(v)
     print(vim.inspect(v))
     return v
@@ -71,19 +65,17 @@ autocmd("BufWritePre", {
 
 autocmd("TextYankPost", {
     callback = function()
-        vim.highlight.on_yank({
-            timeout = 30,
-        })
+        vim.highlight.on_yank({ timeout = 50 })
     end,
     group = yankGroup,
     pattern = "*",
 })
 
-autocmd("BufEnter", {
+autocmd({ "BufEnter", "CursorHold", "InsertLeave" }, {
     group = dvloplerz,
-    pattern = "*",
+    buffer = 0,
     callback = function()
-        vim.lsp.codelens.refresh()
+        vim.lsp.codelens.refresh({ bufnr = 0 })
     end,
 })
 

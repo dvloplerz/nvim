@@ -3,9 +3,4 @@ vim.g.localmapleader = vim.g.mapleader
 
 require("dvloplerz")
 require("autocmds")
-
-vim.defer_fn(function()
-    require("dvloplerz.plugins.configs.lsp")
-    require("dvloplerz.plugins.configs.treesitter")
-    require("dvloplerz.config.autocmd")
-end, 0)
+require("dvloplerz.config.autocmd")

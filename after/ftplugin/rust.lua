@@ -1,6 +1,6 @@
 local opts = { silent = true, buffer = vim.api.nvim_get_current_buf(), noremap = true, remap = true, desc = "" }
 
-vim.keymap.set({ "n", "i" }, "<C-i>", function()
+vim.keymap.set({ "n", "i" }, "<leader>ca", function()
     vim.cmd.RustLsp("codeAction")
 end, vim.tbl_deep_extend("force", opts, { desc = "RustLsp code action." }))
 
@@ -26,7 +26,7 @@ vim.keymap.set("n", "<C-S-?>", function()
     vim.cmd.RustLsp("explainError")
 end, vim.tbl_deep_extend("force", opts, { desc = "RustLsp ExpandErrors." }))
 
-vim.keymap.set("n", "<leader>Ce", function()
+vim.keymap.set("n", "<leader>cg", function()
     vim.cmd.RustLsp("openCargo")
 end, vim.tbl_deep_extend("force", opts, { desc = "Open Cargo.toml" }))
 
